@@ -1,0 +1,9 @@
+{
+  "addons": {
+    "{akaan@akoya-tomo.github.io}": {
+      "updates": [
+        { "version": "1.0.1", "update_link": "https://github.com/akoya-tomo/akaan/releases/download/v1.0.1/akaan-1.0.1-an+fx.xpi" }
+      ]
+    }
+  }
+}
