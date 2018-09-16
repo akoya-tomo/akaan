@@ -3,7 +3,7 @@
 
 ※このアドオンはWebExtensionアドオン対応のFirefox専用となります。  
 ※このアドオンは赤福Extendedがインストールされていることが前提となります。  
-※他のふたば閲覧支援ツールは[こちら](https://github.com/akoya-tomo/futaba_auto_reloader_K/wiki/)。  
+※他の赤福Extendedと併用できるツールは[こちら](https://github.com/akoya-tomo/futaba_auto_reloader_K/wiki/赤福Extended版との併用について/)。  
 
 ## 機能
 * リロード時にスレが消えていたらポータルサイト[ふたポ](http://futapo.futakuro.com/)\(futapo\)の過去ログ\(kako.futakuro.com\)へのリンクを表示（二次元裏may・imgのみ）（デフォルト：有効）
