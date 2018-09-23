@@ -23,7 +23,7 @@
             "all_frames": true
         },
         {
-            "matches":["*://*.2chan.net/*/res/*"],
+            "matches":["*://*.2chan.net/*/res/*","*://kako.futakuro.com/futa/*_b/*"],
             "js":["res.js"],
             "all_frames": false
         }
