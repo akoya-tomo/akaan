@@ -2,9 +2,9 @@ const DEFAULT_USE_FUTAPO_LINK = true;
 const DEFAULT_SCROLL_TO_TOP = true;
 const DEFAULT_CHANGE_BG_COLOR = true;
 const DEFAULT_SEARCH_REPLY = true;
-let use_futapo_link = DEFAULT_USE_FUTAPO_LINK;
-let scroll_to_top = DEFAULT_SCROLL_TO_TOP;
-let change_bg_color = DEFAULT_CHANGE_BG_COLOR;
+let use_futapo_link = null;
+let scroll_to_top = null;
+let change_bg_color = null;
 let search_reply = null;
 
 function onError(error) {
