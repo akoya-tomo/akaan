@@ -1,8 +1,30 @@
 const DEFAULT_USE_FUTAPO_LINK = true;
 const DEFAULT_CHANGE_BG_COLOR = true;
+const DEFAULT_SEARCH_REPLY = true;
+const DEFAULT_SEARCH_RESNO = true;
+const DEFAULT_SEARCH_FILE = true;
+const DEFAULT_POPUP_TIME = 100;
+const DEFAULT_POPUP_INDENT = 0;
+const TEXT_COLOR = "#800000";
+const BG_COLOR = "#F0E0D6";
+const QUOTE_COLOR = "#789922";
+const REPLY_COLOR = "#789922";
 let use_futapo_link = DEFAULT_USE_FUTAPO_LINK;
 let change_bg_color = DEFAULT_CHANGE_BG_COLOR;
+let search_reply = DEFAULT_SEARCH_REPLY;
+let search_resno = DEFAULT_SEARCH_RESNO;
+let search_file = DEFAULT_SEARCH_FILE;
+let popup_time = DEFAULT_POPUP_TIME;
+let popup_indent = DEFAULT_POPUP_INDENT;
+let g_thre = null;
+let g_response_list = [];
+let g_last_response_num = 0;
+let have_sod = false;
+let have_del = false;
 
+const SEARCH_RESULT_PERFECT = 0;
+const SEARCH_RESULT_MAYBE = 1;
+const SEARCH_RESULT_NONE = 2;
 
 function dispLogLink() {
     // 過去ログへのリンクを表示
@@ -35,7 +57,395 @@ function dispLogLink() {
     }
 }
 
+class SearchTarget {
+    constructor(index, linelist, resno, filename) {
+        this.index = index;
+        this.lines = linelist.slice();
+        this.resno = resno;
+        this.filename = filename;
+    }
+
+    searchText(text){
+        let have_maybe = false;
+
+        for(let i = 0; i < this.lines.length; ++i){
+            let find = this.lines[i].indexOf(text);
+
+            if(find != -1){
+                if(text.length == this.lines[i].length){
+                    return SEARCH_RESULT_PERFECT;
+                }else{
+                    have_maybe = true;
+                }
+            }else{
+                continue;
+            }
+        }
+        
+        return have_maybe ? SEARCH_RESULT_MAYBE : SEARCH_RESULT_NONE;
+    }
+
+    searchResNo(no){
+        // 検索文字列が数字の時はレスNo.の数字部分と比較
+        if (no.match(/^\d+$/) && this.resno) {
+            return this.resno.slice(3) == no;
+        } else {
+            return this.resno == no;
+        }
+    }
+
+    searchFileName(name){
+        // 検索文字列が数字の時はファイル名の数字部分と比較
+        if (name.match(/^\d+$/) && this.filename.match(/^\d+/)) {
+            return this.filename.match(/^\d+/)[0] == name;
+        } else {
+            return this.filename == name;
+        }
+    }
+
+    static createByThre(thre) {
+        let resno = "";
+        let filename = "";
+
+        if(search_resno){
+            for (let node = thre.firstChild; node; node = node.nextSibling) {
+                if (node.nodeType == Node.ELEMENT_NODE && node.nodeName == "BLOCKQUOTE") {
+                    break;
+                }
+
+                if(node.nodeType == Node.TEXT_NODE){
+                    let matches = node.nodeValue.match(/(No\.[0-9]+)/);
+                    if (matches) {
+                        resno = matches[1];
+                        break;
+                    }
+                }
+            }
+        }
+
+        if(search_file){
+            let anchor = thre.getElementsByTagName("a")[0];
+            if (anchor) {
+                if (anchor.download) {
+                    filename = anchor.download;
+                } else if (anchor.dummyleafname) {
+                    filename = anchor.dummyleafname;
+                } else {
+                    filename = anchor.textContent;
+                }
+            }
+        }
+
+        return new SearchTarget(
+            0,
+            thre.getElementsByTagName("blockquote")[0].innerText.split(/\r\n|\r|\n/),
+            resno,
+            filename);
+    }
+
+    static createByResponse(index, blockquote) {
+        return new SearchTarget(
+            index,
+            blockquote.innerText.split(/\r\n|\r|\n/),
+            search_resno ? SearchTarget.getResNo(blockquote) : "",
+            search_file ? SearchTarget.getFileName(blockquote) : "");
+    }
+
+    static getResNo(blockquote) {
+        for (let node = blockquote.parentNode.firstChild; node; node = node.nextSibling) {
+            if (node.nodeType == Node.TEXT_NODE) {
+                let matches = node.nodeValue.match(/(No\.[0-9]+)/);
+                if (matches) {
+                    return matches[1];
+                }
+            }
+        }
+
+        return "";
+    }
+
+    static getFileName(blockquote) {
+        for (let i = 0, anchors = blockquote.parentElement.getElementsByTagName("a"); i < anchors.length; ++i) {
+            let matches = anchors[i].href.match(/([0-9]+\.[0-9A-Za-z]+)/);
+            if (matches) {
+                return matches[1];
+            }
+        }
+
+        return "";
+    }
+}
+
+let search_targets = [];
+
+/**
+ * 引用ポップアップ制御クラス
+ * @param {HTMLFontElement} green_text 引用のFont要素
+ * @param {number} index 引用のあるレスのレス番号（スレ内の通番）
+ * @constructor  
+ */
+class Quote {
+    constructor(green_text, index) {
+        this.green_text = green_text;
+        this.index = index;
+    }
+
+    findOriginIndex() {
+        let search_text = this.green_text.innerText;
+        search_text = search_text.slice(1).replace(/^[\s]+|[\s]+$/g, "");
+
+        for (let i = this.index - 1; i >= 0; --i) {
+            let target = search_targets[i];
+
+            if(search_resno && target.searchResNo(search_text)){
+                return target.index;
+            }
+
+            if(search_file && target.searchFileName(search_text)){
+                return target.index;
+            }
+
+            let result = target.searchText(search_text);
+            if(result == SEARCH_RESULT_PERFECT){
+                return target.index;
+            }
+        }
+
+        return -1;
+    }
+}
+
+/**
+ * 返信レス番号ポップアップ制御クラス
+ * @param {HTMLSpanElement} green_text 返信番号のSpan要素
+ * @param {number} index 返信レスのレス番号（スレ内の通番）
+ * @constructor  
+ */
+class Reply {
+    constructor (green_text, index) {
+        this.green_text = green_text;
+        this.index = index;
+        this.popup = null;
+        this.mouseon = false;
+        this.timer = false;
+
+        let reply = this;
+
+        this.green_text.addEventListener("mouseenter", (e) => {
+            if (reply.mouseon) return;
+            reply.mouseon = true;
+
+            if (!reply.timer) {
+                setTimeout(() => {
+                    reply.timer = false;
+
+                    if (reply.mouseon) {
+                        reply.show(e);
+                    }
+                }, popup_time);
+
+                reply.timer = true;
+            }
+        });
+
+        this.green_text.addEventListener("mouseleave", (e) => {
+            let related_target = e.relatedTarget;
+            if (related_target === null) {
+                document.addEventListener("click", hideReplyPopup, false);
+                return;
+            }
+            reply.mouseon = false;
+            reply.hide();
+
+            function hideReplyPopup(e) {
+                let e_target_closest = false;
+                for (let elm = e.target; elm; elm = elm.parentElement) {
+                    if (elm == reply.green_text) {
+                        e_target_closest = true;
+                    }
+                }
+                if (e.target !== null && !e_target_closest) {
+                    document.removeEventListener("click", hideReplyPopup, false);
+                    if (reply.mouseon) {
+                        reply.mouseon = false;
+                        reply.hide();
+                    }
+                }
+            }
+        });
+    }
+
+    createPopup() {
+        this.popup = document.createElement("div");
+        let target_id = null;
+        // div要素を作りたいのでrd要素のクローンじゃだめ
+        // g_response_listは最初のスレを含まないので-1
+        for (let ch = g_response_list[this.index - 1].firstChild; ch != null; ch = ch.nextSibling) {
+            if (ch.nodeType == Node.TEXT_NODE && /(No\.[0-9]+)/.test(ch.nodeValue)) {
+                let matches = ch.nodeValue.match(/(.*)(No\.[0-9]+)(.*)/);
+                let text1 = document.createTextNode(matches[1]);
+                let text2 = document.createTextNode(matches[3]);
+                let anchor = document.createElement("a");
+                anchor.href = "javascript:void(0);";
+                anchor.className = "AKAAN_popup_content_button";
+                anchor.title = "このレスに移動";
+                anchor.innerText = matches[2];
+                anchor.addEventListener("click", () => {
+                    this.mouseon = false;
+                    this.hide();
+                    moveToResponse(target_id);
+                }, false);
+                this.popup.append(text1, anchor, text2);
+            } else if (ch.nodeType == Node.ELEMENT_NODE && ch.nodeName == "INPUT" && ch.id) {
+                target_id = ch.id;
+            } else {
+                this.popup.appendChild(ch.cloneNode(true));
+            }
+        }
+
+        this.popup.className = "AKAAN_reply_no_popup";
+        this.popup.style.position = "absolute";
+        this.popup.style.display = "block";
+        this.popup.style.color = TEXT_COLOR;
+        this.popup.style.backgroundColor = BG_COLOR;
+        this.popup.style.border = "solid 1px";
+        this.popup.style.zIndex = 1;
+        this.popup.style.width = "auto";
+        this.popup.style.maxWidth = "initial";
+        this.popup.style.fontSize = "9pt";
+        this.green_text.appendChild(this.popup);
+    }
+
+    show(e) {
+        this.createPopup();
+
+        if (this.popup) {
+            let rc = Reply.getPopupPosition(e.clientX, e.clientY, this.green_text);
+
+            this.popup.style.top = `${rc.top + rc.height - 2}px`;
+            this.popup.style.left = `${rc.left + popup_indent}px`;
+            this.popup.style.display = "block";
+
+            let hide_button = this.popup.getElementsByClassName("KOSHIAN_HideButton")[0];
+            if (hide_button) {
+                // KOSHIAN NG 改の[隠す]ボタンを削除
+                hide_button.remove();
+            }
+
+            let ng_switch = this.popup.getElementsByClassName("KOSHIAN_NGSwitch")[0];
+            if (ng_switch) {
+                // KOSHIAN NG 改の[NGワード]ボタンを削除
+                ng_switch.remove();
+            }
+        }
+    }
+
+    hide() {
+        if (this.popup) {
+            this.popup.remove();
+        }
+    }
+
+    static getPopupPosition(mouse_client_x, mouse_client_y, elem) {
+        let rc = {};
+
+        let clientH = document.documentElement.clientHeight;
+        let elem_position = elem.getBoundingClientRect();
+
+        rc.left = (elem_position.left + document.documentElement.scrollLeft);
+        rc.top = clientH - (elem_position.bottom + document.documentElement.scrollTop); // elemの下辺をtopにする
+        rc.width = elem.width;
+        rc.height = elem.height;
+
+        return rc;
+    }
+
+}
+
+function searchReply(rtd, index) {
+    let previous_index = -1;
+    for (let i = 0, font_elements = rtd.getElementsByTagName("font"); i < font_elements.length; ++i) {
+        if (font_elements[i].color == QUOTE_COLOR) {
+            let quote = new Quote(font_elements[i], index);
+            let origin_index = quote.findOriginIndex(true);
+            if (origin_index > -1 && origin_index != previous_index) {
+                putReplyNo(origin_index, index);
+                previous_index = origin_index;
+            }
+        }
+    }
+}
+
+function putReplyNo(origin_index, index) {
+    let reply_no = document.createElement("span");
+    reply_no.className = "AKAAN_ReplyNo";
+    reply_no.textContent = `>>${index}`;
+    reply_no.style.color = REPLY_COLOR;
+
+    let response, reply_no_list, ng_button;
+    if (origin_index) {
+        // レス
+        response = g_response_list[origin_index - 1];
+        reply_no_list = response.getElementsByClassName("AKAAN_ReplyNo");
+        ng_button = response.getElementsByClassName("KOSHIAN_HideButton")[0] || response.getElementsByClassName("KOSHIAN_NGSwitch")[0];
+    } else {
+        // スレ
+        response = g_thre;
+        reply_no_list = document.querySelectorAll(".thre > .AKAAN_ReplyNo");
+        ng_button = null;
+    }
+    let target;
+    if (reply_no_list.length) {
+        target = reply_no_list[reply_no_list.length - 1].nextSibling;
+    } else if (ng_button) {
+        target = ng_button.nextSibling;
+    } else if (have_sod) {
+        target = response.getElementsByClassName("sod")[0].nextSibling;
+    } else if (have_del) {
+        target = response.getElementsByClassName("del")[0].nextSibling;
+    } else {
+        target = response.getElementsByTagName("blockquote")[0];
+    }
+    response.insertBefore(reply_no, target);
+    response.insertBefore(document.createTextNode(" "), reply_no);
+    new Reply(reply_no, index);
+}
+
+function process(beg, end){
+    // add search targets
+    for(let i = beg; i < end; ++i){
+        search_targets.push(SearchTarget.createByResponse(i + 1, g_response_list[i].getElementsByTagName("blockquote")[0]));
+    }
+
+    // create popup
+    for(let i = beg; i < end; ++i){
+        searchReply(g_response_list[i], i + 1);
+    }
+}
+
 function main() {
+    g_thre = document.getElementsByClassName("thre")[0];
+    if (g_thre == null) {
+        return;
+    }
+
+    let reply_no_list = g_thre.getElementsByClassName("AKAAN_ReplyNo");
+    while (reply_no_list.length) {
+        reply_no_list[0].remove();
+    }
+
+    if (search_reply) {
+        g_response_list = g_thre.getElementsByClassName("rtd");
+        have_sod = document.getElementsByClassName("sod").length > 0;
+        have_del = document.getElementsByClassName("del").length > 0;
+
+        // add search targets by thre
+        search_targets.push(SearchTarget.createByThre(g_thre));
+
+        process(0, g_response_list.length);
+        g_last_response_num = g_response_list.length;
+    }
+
     let status = "";
     let target = document.getElementById("akahuku_reload_status");
     if (target) {
@@ -57,6 +467,13 @@ function main() {
                 } else
                 if (status.indexOf("新着") === 0) {
                     document.body.style.backgroundColor = null;
+
+                    if (search_reply) {
+                        let prev_res_num = g_last_response_num;
+                        let cur_res_num = g_response_list.length;
+                        process(prev_res_num, cur_res_num);
+                        g_last_response_num = cur_res_num;
+                    }
                 } else
                 if (status.indexOf("No") === 0 || status.indexOf("Mot") === 0) {
                     document.body.style.backgroundColor = null;
@@ -68,6 +485,32 @@ function main() {
     }
 }
 
+/**
+ * 指定したレスへスクロール
+ * @param {string} reply_id レスのcheckboxのid名
+ */
+function moveToResponse(reply_id){
+    if (!reply_id) return;
+    let target = document.getElementById(reply_id);
+    if (target) {
+        target.scrollIntoView(true);
+
+        target.parentElement.style.backgroundColor = "#ffcc99";
+        setTimeout(() => {
+            target.parentElement.style.backgroundColor = "";
+        }, 2000);
+
+        let blockquote = target.parentElement.getElementsByTagName("blockquote")[0];
+        if (blockquote) {
+            let range = document.createRange();
+            range.selectNodeContents(blockquote);
+            let selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+    }
+}
+
 function safeGetValue(value, default_value) {
     return value === undefined ? default_value : value;
 }
@@ -75,6 +518,7 @@ function safeGetValue(value, default_value) {
 browser.storage.local.get().then((result) => {
     use_futapo_link = safeGetValue(result.use_futapo_link, DEFAULT_USE_FUTAPO_LINK);
     change_bg_color = safeGetValue(result.change_bg_color, DEFAULT_CHANGE_BG_COLOR);
+    search_reply = safeGetValue(result.search_reply, DEFAULT_SEARCH_REPLY);
 
     main();
 }, (error) => { });
@@ -86,4 +530,5 @@ browser.storage.onChanged.addListener((changes, areaName) => {
 
     use_futapo_link = safeGetValue(changes.use_futapo_link.newValue, DEFAULT_USE_FUTAPO_LINK);
     change_bg_color = safeGetValue(changes.change_bg_color.newValue, DEFAULT_CHANGE_BG_COLOR);
+    //search_reply = safeGetValue(changes.search_reply.newValue, DEFAULT_SEARCH_REPLY); // 「レスへの返信を探す」はリロードするまで反映しない
 });
