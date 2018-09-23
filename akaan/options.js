@@ -38,6 +38,7 @@ function onLoad() {
 
     use_futapo_link.addEventListener("change", saveSetting);
     scroll_to_top.addEventListener("change", saveSetting);
+    change_bg_color.addEventListener("change", saveSetting);
     search_reply.addEventListener("change", saveSetting);
 
     browser.storage.local.get().then(setCurrentChoice, onError);
