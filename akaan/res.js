@@ -4,7 +4,8 @@ const DEFAULT_SEARCH_REPLY = true;
 const DEFAULT_SEARCH_RESNO = true;
 const DEFAULT_SEARCH_FILE = true;
 const DEFAULT_POPUP_TIME = 100;
-const DEFAULT_POPUP_INDENT = 0;
+const DEFAULT_POPUP_INDENT = -20;
+const DEFAULT_HIDE_TIME = 100;
 const TEXT_COLOR = "#800000";
 const BG_COLOR = "#F0E0D6";
 const QUOTE_COLOR = "#789922";
@@ -16,6 +17,7 @@ let search_resno = DEFAULT_SEARCH_RESNO;
 let search_file = DEFAULT_SEARCH_FILE;
 let popup_time = DEFAULT_POPUP_TIME;
 let popup_indent = DEFAULT_POPUP_INDENT;
+let hide_time = DEFAULT_HIDE_TIME;
 let g_thre = null;
 let g_response_list = [];
 let g_last_response_num = 0;
@@ -227,7 +229,8 @@ class Reply {
         this.index = index;
         this.popup = null;
         this.mouseon = false;
-        this.timer = false;
+        this.timer_show = false;
+        this.timer_hide = false;
 
         let reply = this;
 
@@ -235,16 +238,16 @@ class Reply {
             if (reply.mouseon) return;
             reply.mouseon = true;
 
-            if (!reply.timer) {
+            if (!reply.timer_show) {
                 setTimeout(() => {
-                    reply.timer = false;
+                    reply.timer_show = false;
 
                     if (reply.mouseon) {
                         reply.show(e);
                     }
                 }, popup_time);
 
-                reply.timer = true;
+                reply.timer_show = true;
             }
         });
 
@@ -255,12 +258,21 @@ class Reply {
                 return;
             }
             reply.mouseon = false;
-            reply.hide();
+            if (!reply.timer_hide) {
+                setTimeout(() => {
+                    reply.timer_hide = false;
+                    if (!reply.mouseon) {
+                        reply.hide();
+                    }
+                }, hide_time);
+
+                reply.timer_hide = true;
+            }
 
             function hideReplyPopup(e) {
                 let e_target_closest = false;
                 for (let elm = e.target; elm; elm = elm.parentElement) {
-                    if (elm == reply.green_text) {
+                    if (elm == reply.green_text || elm == reply.popup) {
                         e_target_closest = true;
                     }
                 }
@@ -309,20 +321,51 @@ class Reply {
         this.popup.style.color = TEXT_COLOR;
         this.popup.style.backgroundColor = BG_COLOR;
         this.popup.style.border = "solid 1px";
-        this.popup.style.zIndex = 1;
+        this.popup.style.zIndex = 6;
         this.popup.style.width = "auto";
-        this.popup.style.maxWidth = "initial";
+        this.popup.style.maxWidth = "800px";
         this.popup.style.fontSize = "9pt";
-        this.green_text.appendChild(this.popup);
+        this.popup.mouseon = false;
+        let reply = this;
+        this.popup.addEventListener("mouseenter", () => {
+            reply.mouseon = true;
+        });
+        this.popup.addEventListener("mouseleave", (e) => {
+            let related_target = e.relatedTarget;
+            if (related_target === null) {
+                document.addEventListener("click", hidePopup, false);
+                return;
+            }
+            reply.hide();
+            reply.mouseon = false;
+
+            function hidePopup(e) {
+                let e_target_closest = false;
+                for (let elm = e.target; elm; elm = elm.parentElement) {
+                    if (elm == reply.green_text || elm == reply.popup) {
+                        e_target_closest = true;
+                    }
+                }
+                if (e.target !== null && !e_target_closest) {
+                    document.removeEventListener("click", hidePopup, false);
+                    reply.hide();
+                    reply.mouseon = false;
+                }
+            }
+        });
+        document.body.appendChild(this.popup);
     }
 
     show(e) {
+        if (this.popup) {
+            this.popup.remove();
+        }
         this.createPopup();
 
         if (this.popup) {
             let rc = Reply.getPopupPosition(e.clientX, e.clientY, this.green_text);
 
-            this.popup.style.top = `${rc.top + rc.height - 2}px`;
+            this.popup.style.top = `${rc.top - 2}px`;
             this.popup.style.left = `${rc.left + popup_indent}px`;
             this.popup.style.display = "block";
 
@@ -349,13 +392,10 @@ class Reply {
     static getPopupPosition(mouse_client_x, mouse_client_y, elem) {
         let rc = {};
 
-        let clientH = document.documentElement.clientHeight;
         let elem_position = elem.getBoundingClientRect();
 
-        rc.left = (elem_position.left + document.documentElement.scrollLeft);
-        rc.top = clientH - (elem_position.bottom + document.documentElement.scrollTop); // elemの下辺をtopにする
-        rc.width = elem.width;
-        rc.height = elem.height;
+        rc.left = (mouse_client_x + document.documentElement.scrollLeft);   // マウス位置をleftにする
+        rc.top = (elem_position.bottom + document.documentElement.scrollTop); // elemの下辺をtopにする
 
         return rc;
     }
