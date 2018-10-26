@@ -518,6 +518,9 @@ function main() {
                 if (status.indexOf("No") === 0 || status.indexOf("Mot") === 0) {
                     document.body.style.backgroundColor = null;
                     dispLogLink();
+                } else
+                if (status.indexOf("中断") === 0 || status.indexOf("接続") === 0 || status.indexOf("load error:") === 0 || status.indexOf("ロード失敗") === 0) {
+                    document.body.style.backgroundColor = null;
                 }
             });
         });
