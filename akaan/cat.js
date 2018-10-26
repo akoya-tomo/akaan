@@ -30,6 +30,9 @@ function main(){
                 if (status == "完了しました") {
                     document.body.style.backgroundColor = null;
                     if (scroll_to_top) document.documentElement.scrollTop = 0;
+                } else
+                if (status == "中断されました" || status == "ロード失敗" || status == "接続できませんでした" || status == "満員です") {
+                    document.body.style.backgroundColor = null;
                 }
             });
         });
