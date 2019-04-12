@@ -192,14 +192,14 @@ class Quote {
         this.index = index;
     }
 
-    findOriginIndex() {
+    findOriginIndex(target_index = -1) {
         let search_text = this.green_text.innerText;
         search_text = search_text.slice(1).replace(/^[\s]+|[\s]+$/g, "");
 
         if (!search_text.length) return -1;
 
-        for (let i = this.index - 1; i >= 0; --i) {
-            let target = search_targets[i];
+        if (target_index > -1) {
+            let target = search_targets[target_index];
 
             if(search_resno && target.searchResNo(search_text)){
                 return target.index;
@@ -212,6 +212,24 @@ class Quote {
             let result = target.searchText(search_text);
             if(result == SEARCH_RESULT_PERFECT){
                 return target.index;
+            }
+
+        } else {
+            for (let i = this.index - 1; i >= 0; --i) {
+                let target = search_targets[i];
+
+                if(search_resno && target.searchResNo(search_text)){
+                    return target.index;
+                }
+
+                if(search_file && target.searchFileName(search_text)){
+                    return target.index;
+                }
+
+                let result = target.searchText(search_text);
+                if(result == SEARCH_RESULT_PERFECT){
+                    return target.index;
+                }
             }
         }
 
@@ -405,14 +423,20 @@ class Reply {
 }
 
 function searchReply(rtd, index) {
-    let previous_index = -1;
+    let previous_index = -1, previous_quote = null;
     for (let i = 0, font_elements = rtd.getElementsByTagName("font"); i < font_elements.length; ++i) {
         if (font_elements[i].color == QUOTE_COLOR) {
             let quote = new Quote(font_elements[i], index);
-            let origin_index = quote.findOriginIndex(true);
+            let origin_index = quote.findOriginIndex();
             if (origin_index > -1 && origin_index != previous_index) {
                 putReplyNo(origin_index, index);
+                if (previous_index > -1) {
+                    // 引用元に前回探索した引用の引用元が存在したときは前回設置した返信No.を削除する
+                    let previous_quote_index = previous_quote.findOriginIndex(origin_index);
+                    if (previous_quote_index > -1) removeReplyNo(previous_index);
+                }
                 previous_index = origin_index;
+                previous_quote = quote;
             }
         }
     }
@@ -451,6 +475,24 @@ function putReplyNo(origin_index, index) {
     response.insertBefore(reply_no, target);
     response.insertBefore(document.createTextNode(" "), reply_no);
     new Reply(reply_no, index);
+}
+
+function removeReplyNo(index) {
+    let response, reply_no_list;
+    if (index) {
+        // レス
+        response = g_response_list[index - 1];
+        reply_no_list = response.getElementsByClassName("AKAAN_ReplyNo");
+    } else {
+        // スレ
+        response = g_thre;
+        reply_no_list = document.querySelectorAll(".thre > .AKAAN_ReplyNo");
+    }
+    if (reply_no_list.length) {
+        let target = reply_no_list[reply_no_list.length - 1];
+        response.removeChild(target.previousSibling);   // 空白テキスト
+        response.removeChild(target);
+    }
 }
 
 function process(beg, end){
