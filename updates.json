@@ -2,7 +2,7 @@
   "addons": {
     "akaan@akoya-tomo.github.io": {
       "updates": [
-        { "version": "1.2.2", "update_link": "https://github.com/akoya-tomo/akaan/releases/download/v1.2.2/akaan-1.2.2-fx.xpi" }
+        { "version": "1.3.0", "update_link": "https://github.com/akoya-tomo/akaan/releases/download/v1.3.0/akaan-1.3.0-fx.xpi" }
       ]
     }
   }
