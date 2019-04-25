@@ -1,4 +1,6 @@
 const DEFAULT_USE_FUTAPO_LINK = true;
+const DEFAULT_USE_FTBUCKET_LINK = true;
+const DEFAULT_USE_TSUMANNE_LINK = true;
 const DEFAULT_CHANGE_BG_COLOR = true;
 const DEFAULT_SEARCH_REPLY = true;
 const DEFAULT_SEARCH_RESNO = true;
@@ -11,6 +13,8 @@ const BG_COLOR = "#F0E0D6";
 const QUOTE_COLOR = "#789922";
 const REPLY_COLOR = "#789922";
 let use_futapo_link = DEFAULT_USE_FUTAPO_LINK;
+let use_ftbucket_link = DEFAULT_USE_FTBUCKET_LINK;
+let use_tsumanne_link = DEFAULT_USE_TSUMANNE_LINK;
 let change_bg_color = DEFAULT_CHANGE_BG_COLOR;
 let search_reply = DEFAULT_SEARCH_REPLY;
 let search_resno = DEFAULT_SEARCH_RESNO;
@@ -28,15 +32,53 @@ const SEARCH_RESULT_PERFECT = 0;
 const SEARCH_RESULT_MAYBE = 1;
 const SEARCH_RESULT_NONE = 2;
 
+/**
+ * 過去ログへのリンクを表示
+ */
 function dispLogLink() {
-    // 過去ログへのリンクを表示
-    let href_match = location.href.match(/^https?:\/\/(may|img)\.2chan\.net\/b\/res\/(\d+)\.htm$/);
+    let href_match = location.href.match(/^https?:\/\/([^/.]+)\.2chan\.net\/([^/]+)\/res\/(\d+)\.htm$/);
+    let link_id, link, server, board;
 
     // ふたポ
-    let futapo_link_id = document.getElementById("AKAAN_futapo_link");
-    if (href_match && use_futapo_link && !futapo_link_id) {
-        let futapo_link = "http://kako.futakuro.com/futa/" + href_match[1] + "_b/" + href_match[2] + "/";
-        setLogLink(futapo_link, "futapo");
+    link_id = document.getElementById("AKAAN_futapo_link");
+    if (use_futapo_link && !link_id && href_match
+        && `${href_match[1]}_${href_match[2]}`.match(/may_b|img_b/)) {
+        link = `http://kako.futakuro.com/futa/${href_match[1]}_${href_match[2]}/${href_match[3]}/`;
+        setLogLink(link, "futapo");
+    }
+
+    // FTBucket
+    link_id = document.getElementById("AKAAN_ftbucket_link");
+    if (use_ftbucket_link && !link_id && href_match
+        && `${href_match[1]}_${href_match[2]}`.match(/may_b|img_b|jun_jun|dec_55|dec_60/)) {
+        board = `${href_match[1]}_${href_match[2]}` == "jun_jun" ? "b" : href_match[2];  // jun_junはjun_bに変換
+        server = board == "b" ? href_match[1] : href_match[1] + href_match[2];
+        link = `http://www.ftbucket.info/${server}/cont/${href_match[1]}.2chan.net_${board}_res_${href_match[3]}/index.htm`;
+        setLogLink(link, "ftbucket");
+    }
+
+    // 「」ッチー
+    link_id = document.getElementById("AKAAN_tsumanne_link");
+    if (use_tsumanne_link && !link_id && href_match
+        && `${href_match[1]}_${href_match[2]}`.match(/may_b|img_b|dat_b/)) {
+        switch (href_match[1]) {
+            case "may":
+                server = "my";
+                break;
+            case "img":
+                server = "si";
+                break;
+            case "dat":
+                server = "sa";
+                break;
+            default:
+                server = "";
+                break;
+        }
+        if (server) {
+            link = `http://tsumanne.net/${server}/indexes.php?sbmt=URL&w=${href_match[3]}.htm`;
+            setLogLink(link, "tsumanne");
+        }
     }
 
     /**
@@ -604,6 +646,8 @@ function safeGetValue(value, default_value) {
 
 browser.storage.local.get().then((result) => {
     use_futapo_link = safeGetValue(result.use_futapo_link, DEFAULT_USE_FUTAPO_LINK);
+    use_ftbucket_link = safeGetValue(result.use_ftbucket_link, DEFAULT_USE_FTBUCKET_LINK);
+    use_tsumanne_link = safeGetValue(result.use_tsumanne_link, DEFAULT_USE_TSUMANNE_LINK);
     change_bg_color = safeGetValue(result.change_bg_color, DEFAULT_CHANGE_BG_COLOR);
     search_reply = safeGetValue(result.search_reply, DEFAULT_SEARCH_REPLY);
 
@@ -616,6 +660,8 @@ browser.storage.onChanged.addListener((changes, areaName) => {
     }
 
     use_futapo_link = safeGetValue(changes.use_futapo_link.newValue, DEFAULT_USE_FUTAPO_LINK);
+    use_ftbucket_link = safeGetValue(changes.use_ftbucket_link.newValue, DEFAULT_USE_FTBUCKET_LINK);
+    use_tsumanne_link = safeGetValue(changes.use_tsumanne_link.newValue, DEFAULT_USE_TSUMANNE_LINK);
     change_bg_color = safeGetValue(changes.change_bg_color.newValue, DEFAULT_CHANGE_BG_COLOR);
     //search_reply = safeGetValue(changes.search_reply.newValue, DEFAULT_SEARCH_REPLY); // 「レスへの返信を探す」はリロードするまで反映しない
 });
