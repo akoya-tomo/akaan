@@ -8,6 +8,7 @@ const DEFAULT_SEARCH_FILE = true;
 const DEFAULT_POPUP_TIME = 100;
 const DEFAULT_POPUP_INDENT = -20;
 const DEFAULT_HIDE_TIME = 100;
+const TIME_OUT = 60000;
 const TEXT_COLOR = "#800000";
 const BG_COLOR = "#F0E0D6";
 const QUOTE_COLOR = "#789922";
@@ -27,6 +28,7 @@ let g_response_list = [];
 let g_last_response_num = 0;
 let have_sod = false;
 let have_del = false;
+let tsumanne_loading = false;
 
 const SEARCH_RESULT_PERFECT = 0;
 const SEARCH_RESULT_MAYBE = 1;
@@ -59,25 +61,42 @@ function dispLogLink() {
 
     // 「」ッチー
     link_id = document.getElementById("AKAAN_tsumanne_link");
-    if (use_tsumanne_link && !link_id && href_match
-        && `${href_match[1]}_${href_match[2]}`.match(/may_b|img_b|dat_b/)) {
-        switch (href_match[1]) {
-            case "may":
+    if (use_tsumanne_link && !link_id && href_match && !tsumanne_loading) {
+        switch (`${href_match[1]}_${href_match[2]}`) {
+            case "may_b":
                 server = "my";
                 break;
-            case "img":
+            case "img_b":
                 server = "si";
                 break;
-            case "dat":
+            case "dat_b":
                 server = "sa";
                 break;
             default:
                 server = "";
-                break;
         }
         if (server) {
-            link = `http://tsumanne.net/${server}/indexes.php?sbmt=URL&w=${href_match[3]}.htm`;
-            setLogLink(link, "tsumanne");
+            let xhr = new XMLHttpRequest();
+            xhr.responseType = "json";
+            xhr.timeout = TIME_OUT;
+            xhr.addEventListener("load", () => {
+                if (xhr.status == 200) {
+                    let res = xhr.response;
+                    if (res.success) {
+                        link = `http://tsumanne.net${res.path}`;
+                        setLogLink(link, "tsumanne");
+                    }
+                }
+            });
+            xhr.addEventListener("error", () => {
+                tsumanne_loading = false;
+            });
+            xhr.addEventListener("timeout", () => {
+                tsumanne_loading = false;
+            });
+            xhr.open("GET", `http://tsumanne.net/${server}/indexes.php?format=json&sbmt=URL&w=${href_match[3]}`);
+            xhr.send();
+            tsumanne_loading = true;
         }
     }
 
