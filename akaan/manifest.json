@@ -3,7 +3,7 @@
 
     "name":"赤餡",
 
-    "version":"1.4.0",
+    "version":"1.5.0",
 
     "description":"赤福Extendedにちょっとだけおまけ機能を追加",
 
@@ -34,6 +34,7 @@
     },
 
     "permissions":[
+        "*://www.ftbucket.info/*",
         "*://tsumanne.net/*",
         "storage"
     ],
