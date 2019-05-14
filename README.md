@@ -15,7 +15,7 @@
 
 ## インストール
 **GitHub**  
-[![インストールボタン](images/install_button.png "クリックでアドオンをインストール")](https://github.com/akoya-tomo/akaan/releases/download/v1.5.0/akaan-1.5.0-fx.xpi)
+[![インストールボタン](images/install_button.png "クリックでアドオンをインストール")](https://github.com/akoya-tomo/akaan/releases/download/v1.5.1/akaan-1.5.1-fx.xpi)
 
 ※![\(New\)](images/new.png "New") v1.5.0からアドオンのアクセス許可にFTBucket(`www.ftbucket.info`)が追加になります。（該当スレのログの有無の確認）  
 ※v1.4.0からアドオンのアクセス許可に「」ッチー(`tsumanne.net`)が追加になります。（該当スレのログの有無の確認）  
@@ -28,6 +28,8 @@
 * ![\(New\)](images/new.png "New") 「」ッチーとFTBucketは該当スレのログが無いときはリンクが表示されません。  
 
 ## 更新履歴
+* v1.5.1 2019-05-14
+  - 返信レスポップアップが画面右端より外に表示されないように修正
 * v1.5.0 2019-05-04
   - FTBucketに該当スレのログが無いときはリンクを表示しないように修正
 * v1.4.0 2019-05-02
