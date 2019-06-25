@@ -1,35 +1,70 @@
+const form_selectors = 
+    ".ftbl, #akahuku_floatpostform_container, #akahuku_postform, #akahuku_postform_opener," +   // 返信フォーム
+    "a," +          // aタグ
+    "img," +        // imgタグ
+    "input," +      // inputタグ
+    "textarea," +   // textareaタグ
+    "label," +      // labelタグ
+    "#ddbut," +      // [見る][隠す]ボタン
+    "form[name='delform2']," +  // 削除フォーム
+    "#akahuku_thread_operator," +   // 赤福スレ操作パネル
+    ".futaba_lightbox, .fancybox-overlay, .fancybox-wrap," +    // futaba lightbox
+    "";
+
+const DEFAULT_CHANGE_BG_COLOR = true;
+const DEFAULT_SHOW_DELETED_RES = false;
+const DEFAULT_SEARCH_REPLY = true;
 const DEFAULT_USE_FUTAPO_LINK = true;
 const DEFAULT_USE_FTBUCKET_LINK = true;
 const DEFAULT_USE_TSUMANNE_LINK = true;
-const DEFAULT_CHANGE_BG_COLOR = true;
-const DEFAULT_SEARCH_REPLY = true;
+const DEFAULT_USE_DOUBLECLICK = false;
+const DEFAULT_DISABLE_FORMS = true;
+const DEFAULT_DISABLE_CLASS_RTD = false;
+const DEFAULT_FOCUS_ON_UNREAD = false;
+const DEFAULT_CLICK_PERIOD = 350;
+const DEFAULT_LONG_PRESS_TIME = 0;
+
 const DEFAULT_SEARCH_RESNO = true;
 const DEFAULT_SEARCH_FILE = true;
 const DEFAULT_POPUP_TIME = 100;
 const DEFAULT_POPUP_INDENT = -20;
 const DEFAULT_HIDE_TIME = 100;
+const DEFAULT_DOUBLECLICK_PERIOD = 300;
 const TIME_OUT = 60000;
 const TEXT_COLOR = "#800000";
 const BG_COLOR = "#F0E0D6";
 const QUOTE_COLOR = "#789922";
 const REPLY_COLOR = "#789922";
+
+let change_bg_color = DEFAULT_CHANGE_BG_COLOR;
+let show_deleted_res = DEFAULT_SHOW_DELETED_RES;
+let search_reply = DEFAULT_SEARCH_REPLY;
 let use_futapo_link = DEFAULT_USE_FUTAPO_LINK;
 let use_ftbucket_link = DEFAULT_USE_FTBUCKET_LINK;
 let use_tsumanne_link = DEFAULT_USE_TSUMANNE_LINK;
-let change_bg_color = DEFAULT_CHANGE_BG_COLOR;
-let search_reply = DEFAULT_SEARCH_REPLY;
+let use_doubleclick = DEFAULT_USE_DOUBLECLICK;
+let disable_forms = DEFAULT_DISABLE_FORMS;
+let disable_class_rtd = DEFAULT_DISABLE_CLASS_RTD;
+let focus_on_unread = DEFAULT_FOCUS_ON_UNREAD;
+let click_period = DEFAULT_CLICK_PERIOD;
+let long_press_time = DEFAULT_LONG_PRESS_TIME;
+
 let search_resno = DEFAULT_SEARCH_RESNO;
 let search_file = DEFAULT_SEARCH_FILE;
 let popup_time = DEFAULT_POPUP_TIME;
 let popup_indent = DEFAULT_POPUP_INDENT;
 let hide_time = DEFAULT_HIDE_TIME;
+let doubleclick_period = DEFAULT_DOUBLECLICK_PERIOD;
+
 let g_thre = null;
 let g_response_list = [];
 let g_last_response_num = 0;
 let have_sod = false;
 let have_del = false;
+let ddbut_clicked = false;
 let ftbucket_loading = false;
 let tsumanne_loading = false;
+let exclusion = "";
 
 const SEARCH_RESULT_PERFECT = 0;
 const SEARCH_RESULT_MAYBE = 1;
@@ -588,6 +623,102 @@ function removeReplyNo(index) {
     }
 }
 
+function onDoubleClick(e) {
+    if (use_doubleclick && e.button === 0) {
+        if (exclusion && e.target.closest(exclusion)) {
+            return;
+        }
+        focusOnCatalog();
+        removeSelection();
+    }
+}
+
+/**
+ * カタログへ移動
+ */
+function focusOnCatalog() {
+    let url = location.protocol + "//" + location.host + location.pathname.replace(/res\/\d+\.htm.*/, "");
+    browser.runtime.sendMessage({
+        id: "AKAAN_focus_on_catalog",
+        url: url
+    });
+}
+
+/**
+ *  ダブルクリックで選択された部分を解除する
+ */
+function removeSelection() {
+    let sel_obj = document.getSelection();
+    if (sel_obj) {
+        sel_obj.removeAllRanges();
+    }
+}
+
+let count_mb = 0;
+let timer_id_mb = null;
+let last_doubleclick_time = Date.now();
+
+/**
+ * 右クリックをカウント
+ */
+function countClick() {
+    if (focus_on_unread && Date.now() - last_doubleclick_time > doubleclick_period) {
+        if (count_mb) {
+            count_mb = 0;
+            if (timer_id_mb) {
+                clearTimeout(timer_id_mb);
+            }
+            last_doubleclick_time = Date.now();
+            focusOnUnreadThread();
+        } else {
+            ++count_mb;
+            timer_id_mb = setTimeout(() => {
+                timer_id_mb = null;
+                count_mb = 0;
+            }, click_period);
+        }
+    } else {
+        count_mb = 0;
+    }
+}
+
+/**
+ * 未読レスがあるスレへ移動
+ */
+function focusOnUnreadThread() {
+    browser.runtime.sendMessage({
+        id: "AKAAN_focus_on_unread_thread"
+    });
+}
+
+function onContextmenu(e) {
+    if (focus_on_unread && e.button == 2) {
+        if (!is_long_press) {
+            e.preventDefault();
+        }
+        countClick();
+    }
+}
+
+let is_long_press = false;
+let time_md = Date.now();
+
+function onMouseDown(e) {
+    if (focus_on_unread && e.button == 2) {
+        is_long_press = false;
+        time_md = Date.now();
+    }
+}
+
+let time_mu = Date.now();
+
+function onMouseUp(e) {
+    if (focus_on_unread && e.button == 2) {
+        time_mu = Date.now();
+        is_long_press = time_mu - time_md >= long_press_time;
+    }
+}
+
 function process(beg, end){
     // add search targets
     for(let i = beg; i < end; ++i){
@@ -623,6 +754,13 @@ function main() {
         g_last_response_num = g_response_list.length;
     }
 
+    showDeletedResponses();
+
+    document.addEventListener("dblclick", onDoubleClick);
+    document.addEventListener("contextmenu", onContextmenu);
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("mouseup", onMouseUp);
+
     let status = "";
     let target = document.getElementById("akahuku_reload_status");
     if (target) {
@@ -636,7 +774,7 @@ function main() {
     function checkAkahukuReload() {
         let config = { childList: true };
         let observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
+            mutations.forEach(function(mutation) {  // eslint-disable-line no-unused-vars
                 if (target.textContent == status) return;
                 status = target.textContent;
                 if (status == "ロード中 (ヘッダ)") {
@@ -644,7 +782,7 @@ function main() {
                 } else
                 if (status.indexOf("新着") === 0) {
                     document.body.style.backgroundColor = null;
-
+                    showDeletedResponses();
                     if (search_reply) {
                         let prev_res_num = g_last_response_num;
                         let cur_res_num = g_response_list.length;
@@ -691,28 +829,73 @@ function moveToResponse(reply_id){
     }
 }
 
+function showDeletedResponses() {
+    if (show_deleted_res && !ddbut_clicked) {
+        // 削除されたレスを表示する
+        let ddbut = document.getElementById("ddbut");
+        if (ddbut && ddbut.textContent == "見る") {
+            ddbut.click();
+            ddbut_clicked = true;
+        }
+    }
+}
+
 function safeGetValue(value, default_value) {
     return value === undefined ? default_value : value;
 }
 
 browser.storage.local.get().then((result) => {
+    change_bg_color = safeGetValue(result.change_bg_color, DEFAULT_CHANGE_BG_COLOR);
+    //show_deleted_res = safeGetValue(result.show_deleted_res, DEFAULT_SHOW_DELETED_RES);
+    search_reply = safeGetValue(result.search_reply, DEFAULT_SEARCH_REPLY);
     use_futapo_link = safeGetValue(result.use_futapo_link, DEFAULT_USE_FUTAPO_LINK);
     use_ftbucket_link = safeGetValue(result.use_ftbucket_link, DEFAULT_USE_FTBUCKET_LINK);
     use_tsumanne_link = safeGetValue(result.use_tsumanne_link, DEFAULT_USE_TSUMANNE_LINK);
-    change_bg_color = safeGetValue(result.change_bg_color, DEFAULT_CHANGE_BG_COLOR);
-    search_reply = safeGetValue(result.search_reply, DEFAULT_SEARCH_REPLY);
+    use_doubleclick = safeGetValue(result.use_doubleclick, DEFAULT_USE_DOUBLECLICK);
+    disable_forms = safeGetValue(result.disable_forms, DEFAULT_DISABLE_FORMS);
+    disable_class_rtd = safeGetValue(result.disable_class_rtd, DEFAULT_DISABLE_CLASS_RTD);
+    focus_on_unread = safeGetValue(result.focus_on_unread, DEFAULT_FOCUS_ON_UNREAD);
+    click_period = Number(safeGetValue(result.click_period, DEFAULT_CLICK_PERIOD));
+    long_press_time = Number(safeGetValue(result.long_press_time, DEFAULT_LONG_PRESS_TIME));
+
+    exclusion = "";
+    if (use_doubleclick) {
+        exclusion = disable_forms ? form_selectors : "";
+        exclusion += disable_class_rtd ? ".rtd," : "";
+        if (exclusion) {
+            exclusion = exclusion.slice(0, -1);
+        }
+    }
 
     main();
-}, (error) => { });
+}, (error) => { }); // eslint-disable-line no-unused-vars
 
 browser.storage.onChanged.addListener((changes, areaName) => {
     if (areaName != "local") {
         return;
     }
 
+    change_bg_color = safeGetValue(changes.change_bg_color.newValue, DEFAULT_CHANGE_BG_COLOR);
+    //show_deleted_res = safeGetValue(changes.show_deleted_res.newValue, DEFAULT_SHOW_DELETED_RES);
+    //search_reply = safeGetValue(changes.search_reply.newValue, DEFAULT_SEARCH_REPLY); // 「レスへの返信を探す」はリロードするまで反映しない
     use_futapo_link = safeGetValue(changes.use_futapo_link.newValue, DEFAULT_USE_FUTAPO_LINK);
     use_ftbucket_link = safeGetValue(changes.use_ftbucket_link.newValue, DEFAULT_USE_FTBUCKET_LINK);
     use_tsumanne_link = safeGetValue(changes.use_tsumanne_link.newValue, DEFAULT_USE_TSUMANNE_LINK);
-    change_bg_color = safeGetValue(changes.change_bg_color.newValue, DEFAULT_CHANGE_BG_COLOR);
-    //search_reply = safeGetValue(changes.search_reply.newValue, DEFAULT_SEARCH_REPLY); // 「レスへの返信を探す」はリロードするまで反映しない
+    use_doubleclick = safeGetValue(changes.use_doubleclick.newValue, use_doubleclick);
+    disable_forms = safeGetValue(changes.disable_forms.newValue, disable_forms);
+    disable_class_rtd = safeGetValue(changes.disable_class_rtd.newValue, disable_class_rtd);
+    focus_on_unread = safeGetValue(changes.focus_on_unread.newValue, focus_on_unread);
+    click_period = Number(safeGetValue(changes.click_period.newValue, click_period));
+    long_press_time = Number(safeGetValue(changes.long_press_time.newValue, long_press_time));
+
+    exclusion = "";
+    if (use_doubleclick) {
+        exclusion = disable_forms ? form_selectors : "";
+        exclusion += disable_class_rtd ? ".rtd," : "";
+        if (exclusion) {
+            exclusion = exclusion.slice(0, -1);
+        }
+    }
+
+    showDeletedResponses();
 });

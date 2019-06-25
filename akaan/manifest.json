@@ -3,7 +3,7 @@
 
     "name":"赤餡",
 
-    "version":"1.5.1",
+    "version":"2.0.0",
 
     "description":"赤福Extendedにちょっとだけおまけ機能を追加",
 
@@ -17,17 +17,21 @@
 
     "content_scripts":[
         {
-            "exclude_matches": ["*://*.2chan.net/*/res/*","*://*.2chan.net/*/src/*"],
+            "exclude_matches": ["*://*.2chan.net/*/res/*", "*://*.2chan.net/*/src/*", "*://*.2chan.net/bin/*"],
             "matches":["*://*.2chan.net/*/*"],
             "js":["cat.js"],
             "all_frames": true
         },
         {
-            "matches":["*://*.2chan.net/*/res/*","*://kako.futakuro.com/futa/*_b/*"],
+            "matches":["*://*.2chan.net/*/res/*", "*://kako.futakuro.com/futa/*_b/*", "*://tsumanne.net/*/data/*", "*://*.ftbucket.info/*/cont/*"],
             "js":["res.js"],
             "all_frames": false
         }
     ],
+
+    "background":{
+        "scripts": ["bg.js"]
+    },
 
     "options_ui":{
         "page":"options.html"
@@ -36,12 +40,14 @@
     "permissions":[
         "*://www.ftbucket.info/*",
         "*://tsumanne.net/*",
-        "storage"
+        "storage",
+        "tabs"
     ],
     
     "applications":{
         "gecko":{
             "id":"akaan@akoya-tomo.github.io",
+            "strict_min_version": "57.0a1",
             "update_url": "https://raw.githubusercontent.com/akoya-tomo/akaan/master/updates.json"
         }
     }    
