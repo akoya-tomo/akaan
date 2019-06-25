@@ -28,14 +28,14 @@ let g_focus_on_unread = null;
 let g_click_period = null;
 let g_long_press_time = null;
 
-function onError(error) {
+function onError(error) {   // eslint-disable-line no-unused-vars
 }
 
 function safeGetValue(value, default_value) {
     return value === undefined ? default_value : value;
 }
 
-function saveSetting(e) {
+function saveSetting(e) {   // eslint-disable-line no-unused-vars
     browser.storage.local.set({
         scroll_to_top:scroll_to_top.checked,
         change_bg_color:change_bg_color.checked,

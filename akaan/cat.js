@@ -149,7 +149,7 @@ function main(){
     function checkAkahukuReload() {
         let config = { childList: true };
         let observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
+            mutations.forEach(function(mutation) {  // eslint-disable-line no-unused-vars
                 if (target.textContent == status) return;
                 status = target.textContent;
                 if (status == "ロード中 (ヘッダ)") {
@@ -194,7 +194,7 @@ browser.storage.local.get().then((result) => {
     }
 
     main();
-}, (error) => {});
+}, (error) => {});  // eslint-disable-line no-unused-vars
 
 browser.storage.onChanged.addListener((changes, areaName) => {
     if(areaName != "local"){
