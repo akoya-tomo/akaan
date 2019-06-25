@@ -12,6 +12,7 @@ const form_selectors =
     "";
 
 const DEFAULT_CHANGE_BG_COLOR = true;
+const DEFAULT_SHOW_DELETED_RES = false;
 const DEFAULT_SEARCH_REPLY = true;
 const DEFAULT_USE_FUTAPO_LINK = true;
 const DEFAULT_USE_FTBUCKET_LINK = true;
@@ -36,6 +37,7 @@ const QUOTE_COLOR = "#789922";
 const REPLY_COLOR = "#789922";
 
 let change_bg_color = DEFAULT_CHANGE_BG_COLOR;
+let show_deleted_res = DEFAULT_SHOW_DELETED_RES;
 let search_reply = DEFAULT_SEARCH_REPLY;
 let use_futapo_link = DEFAULT_USE_FUTAPO_LINK;
 let use_ftbucket_link = DEFAULT_USE_FTBUCKET_LINK;
@@ -59,6 +61,7 @@ let g_response_list = [];
 let g_last_response_num = 0;
 let have_sod = false;
 let have_del = false;
+let ddbut_clicked = false;
 let ftbucket_loading = false;
 let tsumanne_loading = false;
 let exclusion = "";
@@ -751,6 +754,8 @@ function main() {
         g_last_response_num = g_response_list.length;
     }
 
+    showDeletedResponses();
+
     document.addEventListener("dblclick", onDoubleClick);
     document.addEventListener("contextmenu", onContextmenu);
     document.addEventListener("mousedown", onMouseDown);
@@ -777,7 +782,7 @@ function main() {
                 } else
                 if (status.indexOf("新着") === 0) {
                     document.body.style.backgroundColor = null;
-
+                    showDeletedResponses();
                     if (search_reply) {
                         let prev_res_num = g_last_response_num;
                         let cur_res_num = g_response_list.length;
@@ -824,12 +829,24 @@ function moveToResponse(reply_id){
     }
 }
 
+function showDeletedResponses() {
+    if (show_deleted_res && !ddbut_clicked) {
+        // 削除されたレスを表示する
+        let ddbut = document.getElementById("ddbut");
+        if (ddbut && ddbut.textContent == "見る") {
+            ddbut.click();
+            ddbut_clicked = true;
+        }
+    }
+}
+
 function safeGetValue(value, default_value) {
     return value === undefined ? default_value : value;
 }
 
 browser.storage.local.get().then((result) => {
     change_bg_color = safeGetValue(result.change_bg_color, DEFAULT_CHANGE_BG_COLOR);
+    //show_deleted_res = safeGetValue(result.show_deleted_res, DEFAULT_SHOW_DELETED_RES);
     search_reply = safeGetValue(result.search_reply, DEFAULT_SEARCH_REPLY);
     use_futapo_link = safeGetValue(result.use_futapo_link, DEFAULT_USE_FUTAPO_LINK);
     use_ftbucket_link = safeGetValue(result.use_ftbucket_link, DEFAULT_USE_FTBUCKET_LINK);
@@ -859,6 +876,7 @@ browser.storage.onChanged.addListener((changes, areaName) => {
     }
 
     change_bg_color = safeGetValue(changes.change_bg_color.newValue, DEFAULT_CHANGE_BG_COLOR);
+    //show_deleted_res = safeGetValue(changes.show_deleted_res.newValue, DEFAULT_SHOW_DELETED_RES);
     //search_reply = safeGetValue(changes.search_reply.newValue, DEFAULT_SEARCH_REPLY); // 「レスへの返信を探す」はリロードするまで反映しない
     use_futapo_link = safeGetValue(changes.use_futapo_link.newValue, DEFAULT_USE_FUTAPO_LINK);
     use_ftbucket_link = safeGetValue(changes.use_ftbucket_link.newValue, DEFAULT_USE_FTBUCKET_LINK);
@@ -878,4 +896,6 @@ browser.storage.onChanged.addListener((changes, areaName) => {
             exclusion = exclusion.slice(0, -1);
         }
     }
+
+    showDeletedResponses();
 });

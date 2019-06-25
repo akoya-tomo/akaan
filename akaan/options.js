@@ -1,5 +1,6 @@
 const DEFAULT_SCROLL_TO_TOP = true;
 const DEFAULT_CHANGE_BG_COLOR = true;
+//const DEFAULT_SHOW_DELETED_RES = true;
 const DEFAULT_SEARCH_REPLY = true;
 const DEFAULT_USE_FUTAPO_LINK = true;
 const DEFAULT_USE_FTBUCKET_LINK = true;
@@ -14,6 +15,7 @@ const DEFAULT_LONG_PRESS_TIME = 0;
 
 let scroll_to_top = null;
 let change_bg_color = null;
+//let show_deleted_res = null;
 let search_reply = null;
 let use_futapo_link = null;
 let use_ftbucket_link = null;
@@ -37,6 +39,7 @@ function saveSetting(e) {
     browser.storage.local.set({
         scroll_to_top:scroll_to_top.checked,
         change_bg_color:change_bg_color.checked,
+        //show_deleted_res:show_deleted_res.checked,
         search_reply:search_reply.checked,
         use_futapo_link:use_futapo_link.checked,
         use_ftbucket_link:use_ftbucket_link.checked,
@@ -54,6 +57,7 @@ function saveSetting(e) {
 function setCurrentChoice(result) {
     scroll_to_top.checked = safeGetValue(result.scroll_to_top, DEFAULT_SCROLL_TO_TOP);
     change_bg_color.checked = safeGetValue(result.change_bg_color, DEFAULT_CHANGE_BG_COLOR);
+    //show_deleted_res.checked = safeGetValue(result.show_deleted_res, DEFAULT_SHOW_DELETED_RES);
     search_reply.checked = safeGetValue(result.search_reply, DEFAULT_SEARCH_REPLY);
     use_futapo_link.checked = safeGetValue(result.use_futapo_link, DEFAULT_USE_FUTAPO_LINK);
     use_ftbucket_link.checked = safeGetValue(result.use_ftbucket_link, DEFAULT_USE_FTBUCKET_LINK);
@@ -77,6 +81,7 @@ function setCurrentChoice(result) {
 function onLoad() {
     scroll_to_top = document.getElementById("scroll_to_top");
     change_bg_color = document.getElementById("change_bg_color");
+    //show_deleted_res = document.getElementById("show_deleted_res");
     search_reply = document.getElementById("search_reply");
     use_futapo_link = document.getElementById("use_futapo_link");
     use_ftbucket_link = document.getElementById("use_ftbucket_link");
@@ -91,6 +96,7 @@ function onLoad() {
   
     scroll_to_top.addEventListener("change", saveSetting);
     change_bg_color.addEventListener("change", saveSetting);
+    //show_deleted_res.addEventListener("change", saveSetting);
     search_reply.addEventListener("change", saveSetting);
     use_futapo_link.addEventListener("change", saveSetting);
     use_ftbucket_link.addEventListener("change", saveSetting);
