@@ -446,9 +446,25 @@ class Reply {
                     moveToResponse(target_id);
                 }, false);
                 this.popup.append(text1, anchor, text2);
-            } else if (ch.nodeType == Node.ELEMENT_NODE && ch.nodeName == "INPUT" && ch.id) {
+            } else if (ch.nodeType == Node.ELEMENT_NODE && ch.classList.contains("cno")) {
+                let anchor = document.createElement("a");
+                anchor.href = "javascript:void(0);";
+                anchor.className = "AKAAN_popup_content_button";
+                anchor.style.margin = "0 15px 0 5px";
+                anchor.title = "このレスに移動";
+                anchor.textContent = ch.textContent;
+                anchor.addEventListener("click", () => {
+                    //this.mouseon = false;
+                    this.hide();
+                    moveToResponse(target_id);
+                }, false);
+                this.popup.appendChild(anchor);
+            } else if (ch.nodeName == "INPUT" && ch.id) {
                 target_id = ch.id;
             } else {
+                if (ch.nodeName == "SPAN" && ch.id) {
+                    target_id = ch.id;
+                }
                 this.popup.appendChild(ch.cloneNode(true));
             }
         }
