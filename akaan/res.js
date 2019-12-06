@@ -847,19 +847,17 @@ function moveToResponse(reply_id){
     if (target) {
         target.scrollIntoView(true);
 
-        target.parentElement.style.backgroundColor = "#ffcc99";
-        setTimeout(() => {
-            target.parentElement.style.backgroundColor = "";
-        }, 2000);
-
-        let blockquote = target.parentElement.getElementsByTagName("blockquote")[0];
+        let blockquote = target.parentNode.getElementsByTagName("blockquote")[0];
         if (blockquote) {
-            let range = document.createRange();
-            range.selectNodeContents(blockquote);
-            let selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
+            blockquote.style.backgroundColor = "highlight";
+            blockquote.style.color = "highlighttext";
+            setTimeout(() => {
+                blockquote.style.backgroundColor = "transparent";
+                blockquote.style.color = "";
+            }, 2000);
         }
+
+
     }
 }
 
