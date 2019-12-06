@@ -266,7 +266,13 @@ class SearchTarget {
     }
 
     static getResNo(blockquote) {
-        for (let node = blockquote.parentNode.firstChild; node; node = node.nextSibling) {
+        let parent = blockquote.parentNode;
+        let number_button = parent.getElementsByClassName("cno")[0] || parent.getElementsByClassName("KOSHIAN_NumberButton")[0];
+        if (number_button) {
+            return number_button.textContent;
+        }
+
+        for (let node = parent.firstChild; node; node = node.nextSibling) {
             if (node.nodeType == Node.TEXT_NODE) {
                 let matches = node.nodeValue.match(/(No\.[0-9]+)/);
                 if (matches) {
