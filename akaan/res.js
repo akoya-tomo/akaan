@@ -31,10 +31,7 @@ const DEFAULT_POPUP_INDENT = -20;
 const DEFAULT_HIDE_TIME = 100;
 const DEFAULT_DOUBLECLICK_PERIOD = 300;
 const TIME_OUT = 60000;
-const TEXT_COLOR = "#800000";
-const BG_COLOR = "#F0E0D6";
 const QUOTE_COLOR = "#789922";
-const REPLY_COLOR = "#789922";
 
 let change_bg_color = DEFAULT_CHANGE_BG_COLOR;
 let show_deleted_res = DEFAULT_SHOW_DELETED_RES;
@@ -464,15 +461,7 @@ class Reply {
         }
 
         this.popup.className = "AKAAN_reply_no_popup";
-        this.popup.style.position = "absolute";
-        this.popup.style.display = "block";
-        this.popup.style.color = TEXT_COLOR;
-        this.popup.style.backgroundColor = BG_COLOR;
-        this.popup.style.border = "solid 1px";
-        this.popup.style.zIndex = 6;
-        this.popup.style.width = "auto";
         this.popup.style.maxWidth = "800px";
-        this.popup.style.fontSize = "9pt";
         let reply = this;
         this.popup.addEventListener("mouseenter", () => {
             if (this.timer_hide) {
@@ -519,7 +508,6 @@ class Reply {
             let popup_left = rc.left + popup_indent;
             this.popup.style.left = "0px";
             this.popup.style.right = "";
-            this.popup.style.display = "block";
 
             // ポップアップが画面右端からはみ出る時は右端にそろえる
             let popup_rect = this.popup.getBoundingClientRect();
@@ -602,7 +590,6 @@ function putReplyNo(origin_index, index) {
     let reply_no = document.createElement("span");
     reply_no.className = "AKAAN_ReplyNo";
     reply_no.textContent = `>>${index}`;
-    reply_no.style.color = REPLY_COLOR;
 
     let response, reply_no_list, ng_button;
     if (origin_index) {
@@ -629,7 +616,6 @@ function putReplyNo(origin_index, index) {
         target = response.getElementsByTagName("blockquote")[0];
     }
     response.insertBefore(reply_no, target);
-    response.insertBefore(document.createTextNode(" "), reply_no);
     new Reply(reply_no, index);
 }
 
@@ -646,7 +632,6 @@ function removeReplyNo(index) {
     }
     if (reply_no_list.length) {
         let target = reply_no_list[reply_no_list.length - 1];
-        response.removeChild(target.previousSibling);   // 空白テキスト
         response.removeChild(target);
     }
 }
