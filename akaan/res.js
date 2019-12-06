@@ -65,6 +65,8 @@ let ddbut_clicked = false;
 let ftbucket_loading = false;
 let tsumanne_loading = false;
 let exclusion = "";
+let g_reply_popup = null;
+let is_akahuku_reloading = false;
 
 const SEARCH_RESULT_PERFECT = 0;
 const SEARCH_RESULT_MAYBE = 1;
@@ -366,45 +368,41 @@ class Reply {
         this.green_text = green_text;
         this.index = index;
         this.popup = null;
-        this.mouseon = false;
-        this.timer_show = false;
-        this.timer_hide = false;
+        this.timer_show = null;
+        this.timer_hide = null;
 
         let reply = this;
 
         this.green_text.addEventListener("mouseenter", (e) => {
-            if (reply.mouseon) return;
-            reply.mouseon = true;
+            if (reply.timer_hide) {
+                clearTimeout(reply.timer_hide);
+                reply.timer_hide = null;
+            }
 
             if (!reply.timer_show) {
-                setTimeout(() => {
-                    reply.timer_show = false;
-
-                    if (reply.mouseon) {
-                        reply.show(e);
-                    }
+                reply.timer_show = setTimeout(() => {
+                    reply.timer_show = null;
+                    reply.show(e);
                 }, popup_time);
-
-                reply.timer_show = true;
             }
         });
 
         this.green_text.addEventListener("mouseleave", (e) => {
+            if (reply.timer_show) {
+                clearTimeout(reply.timer_show);
+                reply.timer_show = null;
+            }
+
             let related_target = e.relatedTarget;
             if (related_target === null) {
                 document.addEventListener("click", hideReplyPopup, false);
                 return;
             }
-            reply.mouseon = false;
             if (!reply.timer_hide) {
-                setTimeout(() => {
-                    reply.timer_hide = false;
-                    if (!reply.mouseon) {
-                        reply.hide();
-                    }
+                reply.timer_hide = setTimeout(() => {
+                    reply.timer_hide = null;
+                    reply.hide();
                 }, hide_time);
-
-                reply.timer_hide = true;
             }
 
             function hideReplyPopup(e) {
@@ -416,10 +414,7 @@ class Reply {
                 }
                 if (e.target !== null && !e_target_closest) {
                     document.removeEventListener("click", hideReplyPopup, false);
-                    if (reply.mouseon) {
-                        reply.mouseon = false;
-                        reply.hide();
-                    }
+                    reply.hide();
                 }
             }
         });
@@ -441,7 +436,6 @@ class Reply {
                 anchor.title = "このレスに移動";
                 anchor.innerText = matches[2];
                 anchor.addEventListener("click", () => {
-                    this.mouseon = false;
                     this.hide();
                     moveToResponse(target_id);
                 }, false);
@@ -479,10 +473,12 @@ class Reply {
         this.popup.style.width = "auto";
         this.popup.style.maxWidth = "800px";
         this.popup.style.fontSize = "9pt";
-        this.popup.mouseon = false;
         let reply = this;
         this.popup.addEventListener("mouseenter", () => {
-            reply.mouseon = true;
+            if (this.timer_hide) {
+                clearTimeout(this.timer_hide);
+                this.timer_hide = null;
+            }
         });
         this.popup.addEventListener("mouseleave", (e) => {
             let related_target = e.relatedTarget;
@@ -491,7 +487,6 @@ class Reply {
                 return;
             }
             reply.hide();
-            reply.mouseon = false;
 
             function hidePopup(e) {
                 let e_target_closest = false;
@@ -503,7 +498,6 @@ class Reply {
                 if (e.target !== null && !e_target_closest) {
                     document.removeEventListener("click", hidePopup, false);
                     reply.hide();
-                    reply.mouseon = false;
                 }
             }
         });
@@ -511,10 +505,12 @@ class Reply {
     }
 
     show(e) {
-        if (this.popup) {
-            this.popup.remove();
+        this.hide();
+        if (is_akahuku_reloading) {
+            return;
         }
         this.createPopup();
+        g_reply_popup = this.popup;
 
         if (this.popup) {
             let rc = Reply.getPopupPosition(e.clientX, e.clientY, this.green_text);
@@ -554,9 +550,18 @@ class Reply {
     }
 
     hide() {
+        if (this.timer_show) {
+            clearTimeout(this.timer_show);
+            this.timer_show = null;
+        }
+        if (this.timer_hide) {
+            clearTimeout(this.timer_hide);
+            this.timer_hide = null;
+        }
         if (this.popup) {
             this.popup.remove();
         }
+        g_reply_popup = null;
     }
 
     static getPopupPosition(mouse_client_x, mouse_client_y, elem) {
@@ -795,31 +800,37 @@ function main() {
     }
     function checkAkahukuReload() {
         let config = { childList: true };
-        let observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {  // eslint-disable-line no-unused-vars
-                if (target.textContent == status) return;
-                status = target.textContent;
-                if (status == "ロード中 (ヘッダ)") {
-                    if (change_bg_color) document.body.style.backgroundColor = '#EEEEEE';
-                } else
-                if (status.indexOf("新着") === 0) {
-                    document.body.style.backgroundColor = null;
-                    showDeletedResponses();
-                    if (search_reply) {
-                        let prev_res_num = g_last_response_num;
-                        let cur_res_num = g_response_list.length;
-                        process(prev_res_num, cur_res_num);
-                        g_last_response_num = cur_res_num;
-                    }
-                } else
-                if (status.indexOf("No") === 0 || status.indexOf("Mot") === 0) {
-                    document.body.style.backgroundColor = null;
-                    dispLogLink();
-                } else
-                if (status.indexOf("中断") === 0 || status.indexOf("接続") === 0 || status.indexOf("load error:") === 0 || status.indexOf("ロード失敗") === 0) {
-                    document.body.style.backgroundColor = null;
+        let observer = new MutationObserver(function() {
+            if (target.textContent == status) {
+                return;
+            }
+            status = target.textContent;
+            if (status == "ロード中 (ヘッダ)") {
+                is_akahuku_reloading = true;
+                if (g_reply_popup) {
+                    g_reply_popup.remove();
                 }
-            });
+                if (change_bg_color) {
+                    document.body.style.backgroundColor = '#EEEEEE';
+                }
+            } else if (status.indexOf("新着") === 0) {
+                is_akahuku_reloading = false;
+                document.body.style.backgroundColor = null;
+                showDeletedResponses();
+                if (search_reply) {
+                    let prev_res_num = g_last_response_num;
+                    let cur_res_num = g_response_list.length;
+                    process(prev_res_num, cur_res_num);
+                    g_last_response_num = cur_res_num;
+                }
+            } else if (status.indexOf("No") === 0 || status.indexOf("Mot") === 0) {
+                is_akahuku_reloading = false;
+                document.body.style.backgroundColor = null;
+                dispLogLink();
+            } else if (status.indexOf("中断") === 0 || status.indexOf("接続") === 0 || status.indexOf("load error:") === 0 || status.indexOf("ロード失敗") === 0) {
+                is_akahuku_reloading = false;
+                document.body.style.backgroundColor = null;
+            }
         });
         observer.observe(target, config);
     }
