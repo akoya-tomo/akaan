@@ -3,7 +3,7 @@
 
     "name":"赤餡",
 
-    "version":"2.0.0",
+    "version":"2.1.0",
 
     "description":"赤福Extendedにちょっとだけおまけ機能を追加",
 
@@ -25,6 +25,7 @@
         {
             "matches":["*://*.2chan.net/*/res/*", "*://kako.futakuro.com/futa/*_b/*", "*://tsumanne.net/*/data/*", "*://*.ftbucket.info/*/cont/*"],
             "js":["res.js"],
+            "css":["style.css"],
             "all_frames": false
         }
     ],
