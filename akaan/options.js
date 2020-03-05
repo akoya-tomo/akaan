@@ -2,6 +2,7 @@ const DEFAULT_SCROLL_TO_TOP = true;
 const DEFAULT_CHANGE_BG_COLOR = true;
 //const DEFAULT_SHOW_DELETED_RES = true;
 const DEFAULT_SEARCH_REPLY = true;
+const DEFAULT_PUT_PDMC = true;
 const DEFAULT_USE_FUTAPO_LINK = true;
 const DEFAULT_USE_FTBUCKET_LINK = true;
 const DEFAULT_USE_TSUMANNE_LINK = true;
@@ -17,6 +18,7 @@ let scroll_to_top = null;
 let change_bg_color = null;
 //let show_deleted_res = null;
 let search_reply = null;
+let put_pdmc = null;
 let use_futapo_link = null;
 let use_ftbucket_link = null;
 let use_tsumanne_link = null;
@@ -41,6 +43,7 @@ function saveSetting(e) {   // eslint-disable-line no-unused-vars
         change_bg_color:change_bg_color.checked,
         //show_deleted_res:show_deleted_res.checked,
         search_reply:search_reply.checked,
+        put_pdmc:put_pdmc.checked,
         use_futapo_link:use_futapo_link.checked,
         use_ftbucket_link:use_ftbucket_link.checked,
         use_tsumanne_link:use_tsumanne_link.checked,
@@ -59,6 +62,7 @@ function setCurrentChoice(result) {
     change_bg_color.checked = safeGetValue(result.change_bg_color, DEFAULT_CHANGE_BG_COLOR);
     //show_deleted_res.checked = safeGetValue(result.show_deleted_res, DEFAULT_SHOW_DELETED_RES);
     search_reply.checked = safeGetValue(result.search_reply, DEFAULT_SEARCH_REPLY);
+    put_pdmc.checked = safeGetValue(result.put_pdmc, DEFAULT_PUT_PDMC);
     use_futapo_link.checked = safeGetValue(result.use_futapo_link, DEFAULT_USE_FUTAPO_LINK);
     use_ftbucket_link.checked = safeGetValue(result.use_ftbucket_link, DEFAULT_USE_FTBUCKET_LINK);
     use_tsumanne_link.checked = safeGetValue(result.use_tsumanne_link, DEFAULT_USE_TSUMANNE_LINK);
@@ -83,6 +87,7 @@ function onLoad() {
     change_bg_color = document.getElementById("change_bg_color");
     //show_deleted_res = document.getElementById("show_deleted_res");
     search_reply = document.getElementById("search_reply");
+    put_pdmc = document.getElementById("put_pdmc");
     use_futapo_link = document.getElementById("use_futapo_link");
     use_ftbucket_link = document.getElementById("use_ftbucket_link");
     use_tsumanne_link = document.getElementById("use_tsumanne_link");
@@ -98,6 +103,7 @@ function onLoad() {
     change_bg_color.addEventListener("change", saveSetting);
     //show_deleted_res.addEventListener("change", saveSetting);
     search_reply.addEventListener("change", saveSetting);
+    put_pdmc.addEventListener("change", saveSetting);
     use_futapo_link.addEventListener("change", saveSetting);
     use_ftbucket_link.addEventListener("change", saveSetting);
     use_tsumanne_link.addEventListener("change", saveSetting);

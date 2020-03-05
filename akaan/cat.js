@@ -12,6 +12,7 @@ const form_selectors =
 
 const DEFAULT_SCROLL_TO_TOP = true;
 const DEFAULT_CHANGE_BG_COLOR = true;
+const DEFAULT_PUT_PDMC = true;
 const DEFAULT_USE_DOUBLECLICK = false;
 const DEFAULT_DISABLE_FORMS = true;
 const DEFAULT_DISABLE_CLASS_RTD = false;
@@ -22,6 +23,7 @@ const DEFAULT_LONG_PRESS_TIME = 0;
 const DEFAULT_DOUBLECLICK_PERIOD = 300;
 let scroll_to_top = DEFAULT_SCROLL_TO_TOP;
 let change_bg_color = DEFAULT_CHANGE_BG_COLOR;
+let put_pdmc = DEFAULT_PUT_PDMC;
 let use_doubleclick = DEFAULT_USE_DOUBLECLICK;
 let disable_forms = DEFAULT_DISABLE_FORMS;
 let disable_class_rtd = DEFAULT_DISABLE_CLASS_RTD;
@@ -162,6 +164,30 @@ function main(){
                 if (scroll_to_top) {
                     document.documentElement.scrollTop = 0;
                 }
+                // プルダウンメニューボタン設置
+                if (put_pdmc) {
+                    let ct = document.getElementById("cattable");
+                    if (ct) {
+                        let ca = ct.getElementsByTagName("a");
+                        for (let i = 0; i < ca.length; i++) {
+                            let ci = ca[i];
+                            let parent = ci.parentNode;
+                            let pdmc = parent.getElementsByClassName("pdmc")[0];
+                            if (pdmc) {
+                                continue;
+                            }
+                            let cn = ci.href.match(/res\/([0-9]+)\.htm/)[1];
+                            if (cn == null) {
+                                continue;
+                            }
+                            let cd = document.createElement("div");
+                            cd.className = "pdmc";
+                            cd.setAttribute("data-no", cn);
+                            parent.appendChild(cd);
+                        }
+                        hidetd();
+                    }
+                }
             } else if (status == "中断されました" || status == "ロード失敗" || status == "接続できませんでした" || status == "満員です") {
                 document.body.style.backgroundColor = null;
             }
@@ -171,12 +197,93 @@ function main(){
 
 }
 
+function hidetd(){
+    let catmode = getParam("sort");
+    if (catmode != "9" && catmode != "7") {
+        return;
+    }
+    let histhide = gethistory(catmode);
+    let cathide = histhide.cathide;
+    let ct = document.getElementById("cattable");
+    let ca = ct.getElementsByTagName("a");
+    for (let i = 0; i < ca.length; i++) {
+        let ci = ca[i];
+        let cn = ci.href.match(/res\/([0-9]+)\.htm/)[1];
+        if (cn == null) {
+            continue;
+        }
+        if (cn > 0 && cathide.indexOf(cn) != -1) {
+            ci.parentNode.style.display="none";
+        }
+    }
+}
+
+function getParam(name, url) {
+    if (!url) {
+        url = window.location.href;
+    }
+    name = name.replace(/[\[\]]/g, "\\$&");     // eslint-disable-line no-useless-escape
+    let regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(url);
+    if (!results) {
+        return null;
+    }
+    if (!results[2]) {
+        return '';
+    }
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+
+function gethistory(catmode){
+    let cathists;
+    if (catmode == "9") {
+        cathists = getCookie("cathists");
+    } else {
+        cathists = getCookie("catviews");
+    }
+    let cathist,cathide;
+    if (cathists == "") {
+        cathist=[];
+        cathide=[];
+    } else {
+        let cattmp = cathists.split('/');
+        if (cattmp[0] == "") {
+            cathist=[];
+        } else {
+            cathist = cattmp[0].split('-');
+        }
+        if  (cattmp[1] == "") {
+            cathide = [];
+        } else {
+            cathide = cattmp[1].split('-');
+        }
+    }
+    return {"cathist":cathist,"cathide":cathide};
+}
+
+function getCookie(key, tmp1, tmp2, xx1, xx2, xx3){  //get cookie
+    tmp1 = " " + document.cookie + ";";
+    xx1 = xx2 = 0;
+    let len = tmp1.length;
+    while (xx1 < len) {
+        xx2 = tmp1.indexOf(";", xx1);
+        tmp2 = tmp1.substring(xx1 + 1, xx2);
+        xx3 = tmp2.indexOf("=");
+        if (tmp2.substring(0, xx3) == key) {
+            return (unescape(tmp2.substring(xx3 + 1, xx2 - xx1 - 1)));
+        }
+        xx1 = xx2 + 1;
+    }
+    return("");
+}
+
 function safeGetValue(value, default_value) {
     return value === undefined ? default_value : value;
 }
 
 browser.storage.local.get().then((result) => {
     scroll_to_top = safeGetValue(result.scroll_to_top, DEFAULT_SCROLL_TO_TOP);
+    put_pdmc = safeGetValue(result.put_pdmc, DEFAULT_PUT_PDMC);
     use_doubleclick = safeGetValue(result.use_doubleclick, DEFAULT_USE_DOUBLECLICK);
     disable_forms = safeGetValue(result.disable_forms, DEFAULT_DISABLE_FORMS);
     disable_class_rtd = safeGetValue(result.disable_class_rtd, DEFAULT_DISABLE_CLASS_RTD);
@@ -204,6 +311,7 @@ browser.storage.onChanged.addListener((changes, areaName) => {
     }
 
     scroll_to_top = safeGetValue(changes.scroll_to_top.newValue, DEFAULT_SCROLL_TO_TOP);
+    put_pdmc = safeGetValue(changes.put_pdmc.newValue, DEFAULT_PUT_PDMC);
     use_doubleclick = safeGetValue(changes.use_doubleclick.newValue, use_doubleclick);
     disable_forms = safeGetValue(changes.disable_forms.newValue, disable_forms);
     disable_class_rtd = safeGetValue(changes.disable_class_rtd.newValue, disable_class_rtd);
