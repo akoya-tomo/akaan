@@ -159,6 +159,11 @@ function main(){
                 if (change_bg_color) {
                     document.body.style.backgroundColor = '#EEEEEE';
                 }
+                // 既存のプルダウンメニューを消去
+                let pdm = document.getElementById("pdm");
+                if (pdm) {
+                    pdm.remove();
+                }
             } else if (status == "完了しました") {
                 document.body.style.backgroundColor = null;
                 if (scroll_to_top) {
