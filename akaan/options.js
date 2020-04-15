@@ -6,6 +6,7 @@ const DEFAULT_PUT_PDMC = true;
 const DEFAULT_USE_FUTAPO_LINK = true;
 const DEFAULT_USE_FTBUCKET_LINK = true;
 const DEFAULT_USE_TSUMANNE_LINK = true;
+const DEFAULT_USE_FUTAFUTA_LINK = true;
 const DEFAULT_USE_DOUBLECLICK = false;
 const DEFAULT_DISABLE_FORMS = true;
 const DEFAULT_DISABLE_CLASS_RTD = false;
@@ -22,6 +23,7 @@ let put_pdmc = null;
 let use_futapo_link = null;
 let use_ftbucket_link = null;
 let use_tsumanne_link = null;
+let use_futafuta_link = null;
 let g_use_doubleclick = null;
 let g_disable_forms = null;
 let g_disable_class_rtd = null;
@@ -47,6 +49,7 @@ function saveSetting(e) {   // eslint-disable-line no-unused-vars
         use_futapo_link:use_futapo_link.checked,
         use_ftbucket_link:use_ftbucket_link.checked,
         use_tsumanne_link:use_tsumanne_link.checked,
+        use_futafuta_link:use_futafuta_link.checked,
         use_doubleclick: g_use_doubleclick.checked,
         disable_forms: g_disable_forms.checked,
         disable_class_rtd: g_disable_class_rtd.checked,
@@ -66,6 +69,7 @@ function setCurrentChoice(result) {
     use_futapo_link.checked = safeGetValue(result.use_futapo_link, DEFAULT_USE_FUTAPO_LINK);
     use_ftbucket_link.checked = safeGetValue(result.use_ftbucket_link, DEFAULT_USE_FTBUCKET_LINK);
     use_tsumanne_link.checked = safeGetValue(result.use_tsumanne_link, DEFAULT_USE_TSUMANNE_LINK);
+    use_futafuta_link.checked = safeGetValue(result.use_futafuta_link, DEFAULT_USE_FUTAFUTA_LINK);
     g_use_doubleclick.checked = safeGetValue(result.use_doubleclick, DEFAULT_USE_DOUBLECLICK);
     g_disable_forms.checked = safeGetValue(result.disable_forms, DEFAULT_DISABLE_FORMS);
     g_disable_class_rtd.checked = safeGetValue(result.disable_class_rtd, DEFAULT_DISABLE_CLASS_RTD);
@@ -91,6 +95,7 @@ function onLoad() {
     use_futapo_link = document.getElementById("use_futapo_link");
     use_ftbucket_link = document.getElementById("use_ftbucket_link");
     use_tsumanne_link = document.getElementById("use_tsumanne_link");
+    use_futafuta_link = document.getElementById("use_futafuta_link");
     g_use_doubleclick = document.getElementById("use_doubleclick");
     g_disable_forms = document.getElementById("disable_forms");
     g_disable_class_rtd = document.getElementById("disable_class_rtd");
@@ -107,6 +112,7 @@ function onLoad() {
     use_futapo_link.addEventListener("change", saveSetting);
     use_ftbucket_link.addEventListener("change", saveSetting);
     use_tsumanne_link.addEventListener("change", saveSetting);
+    use_futafuta_link.addEventListener("change", saveSetting);
     g_use_doubleclick.addEventListener("change", () => {
         g_disable_forms.disabled = !g_use_doubleclick.checked;
         g_disable_class_rtd.disabled = !g_use_doubleclick.checked;

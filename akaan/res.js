@@ -17,6 +17,7 @@ const DEFAULT_SEARCH_REPLY = true;
 const DEFAULT_USE_FUTAPO_LINK = true;
 const DEFAULT_USE_FTBUCKET_LINK = true;
 const DEFAULT_USE_TSUMANNE_LINK = true;
+const DEFAULT_USE_FUTAFUTA_LINK = true;
 const DEFAULT_USE_DOUBLECLICK = false;
 const DEFAULT_DISABLE_FORMS = true;
 const DEFAULT_DISABLE_CLASS_RTD = false;
@@ -39,6 +40,7 @@ let search_reply = DEFAULT_SEARCH_REPLY;
 let use_futapo_link = DEFAULT_USE_FUTAPO_LINK;
 let use_ftbucket_link = DEFAULT_USE_FTBUCKET_LINK;
 let use_tsumanne_link = DEFAULT_USE_TSUMANNE_LINK;
+let use_futafuta_link = DEFAULT_USE_FUTAFUTA_LINK;
 let use_doubleclick = DEFAULT_USE_DOUBLECLICK;
 let disable_forms = DEFAULT_DISABLE_FORMS;
 let disable_class_rtd = DEFAULT_DISABLE_CLASS_RTD;
@@ -148,6 +150,14 @@ function dispLogLink() {
             xhr.send();
             is_tsumanne_loading = true;
         }
+    }
+
+    // ふたふた
+    link_id = document.getElementById("AKAAN_futafuta_link");
+    if (use_futafuta_link && !link_id && href_match
+        && `${href_match[1]}_${href_match[2]}`.match(/may_b|img_b|jun_jun/)) {
+        let link = `${location.protocol}//futafuta.site/thread/${href_match[1]}/${href_match[3]}.htm`;
+        setLogLink(link, "futafuta");
     }
 
     /**
@@ -869,6 +879,7 @@ browser.storage.local.get().then((result) => {
     use_futapo_link = safeGetValue(result.use_futapo_link, DEFAULT_USE_FUTAPO_LINK);
     use_ftbucket_link = safeGetValue(result.use_ftbucket_link, DEFAULT_USE_FTBUCKET_LINK);
     use_tsumanne_link = safeGetValue(result.use_tsumanne_link, DEFAULT_USE_TSUMANNE_LINK);
+    use_futafuta_link = safeGetValue(result.use_futafuta_link, DEFAULT_USE_FUTAFUTA_LINK);
     use_doubleclick = safeGetValue(result.use_doubleclick, DEFAULT_USE_DOUBLECLICK);
     disable_forms = safeGetValue(result.disable_forms, DEFAULT_DISABLE_FORMS);
     disable_class_rtd = safeGetValue(result.disable_class_rtd, DEFAULT_DISABLE_CLASS_RTD);
@@ -899,6 +910,7 @@ browser.storage.onChanged.addListener((changes, areaName) => {
     use_futapo_link = safeGetValue(changes.use_futapo_link.newValue, DEFAULT_USE_FUTAPO_LINK);
     use_ftbucket_link = safeGetValue(changes.use_ftbucket_link.newValue, DEFAULT_USE_FTBUCKET_LINK);
     use_tsumanne_link = safeGetValue(changes.use_tsumanne_link.newValue, DEFAULT_USE_TSUMANNE_LINK);
+    use_futafuta_link = safeGetValue(changes.use_futafuta_link.newValue, DEFAULT_USE_FUTAFUTA_LINK);
     use_doubleclick = safeGetValue(changes.use_doubleclick.newValue, use_doubleclick);
     disable_forms = safeGetValue(changes.disable_forms.newValue, disable_forms);
     disable_class_rtd = safeGetValue(changes.disable_class_rtd.newValue, disable_class_rtd);
