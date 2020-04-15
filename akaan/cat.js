@@ -181,13 +181,13 @@ function main(){
                             if (pdmc) {
                                 continue;
                             }
-                            let cn = ci.href.match(/res\/([0-9]+)\.htm/)[1];
+                            let cn = ci.href.match(/res\/([0-9]+)\.htm/);
                             if (cn == null) {
                                 continue;
                             }
                             let cd = document.createElement("div");
                             cd.className = "pdmc";
-                            cd.setAttribute("data-no", cn);
+                            cd.setAttribute("data-no", cn[1]);
                             parent.appendChild(cd);
                         }
                         hidetd();
