@@ -12,7 +12,7 @@ const form_selectors =
 
 const DEFAULT_SCROLL_TO_TOP = true;
 const DEFAULT_CHANGE_BG_COLOR = true;
-const DEFAULT_PUT_PDMC = true;
+const DEFAULT_PUT_PDMC = false;
 const DEFAULT_USE_DOUBLECLICK = false;
 const DEFAULT_DISABLE_FORMS = true;
 const DEFAULT_DISABLE_CLASS_RTD = false;
